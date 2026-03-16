@@ -218,5 +218,7 @@ MonoBehaviour:
   Speed: 10
   JumpForce: 10
   rb: {fileID: 5392522373824590224}
+  WallHorizontalForce: 15
   bGrounded: 0
   MaxJumps: 2
+  MaxWallJumps: 2

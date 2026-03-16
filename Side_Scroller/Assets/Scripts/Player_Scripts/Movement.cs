@@ -9,6 +9,11 @@ public class Movement : MonoBehaviour
     public float JumpForce = 1;
     public Rigidbody2D rb;
 
+    // Force horizontale appliquée automatiquement lors d'un wall-jump
+    public float WallHorizontalForce = 5f;
+
+    // Hauteur verticale spécifique appliquée lors d'un wall-jump (modifiable depuis l'inspecteur)
+    public float WallVerticalForce = 1f;
 
     // Check si touche le sol
     public bool bGrounded = false;
@@ -25,6 +30,9 @@ public class Movement : MonoBehaviour
     private Dictionary<int, int> wallJumpRemaining = new Dictionary<int, int>(); // key = instanceID du mur
     private int currentWallId = 0;
 
+    // Direction horizontale à appliquer lors d'un wall-jump (1 = droite, -1 = gauche)
+    private float lastWallJumpDirection = 0f;
+
     private void Start()
     {
         jumpsRemaining = MaxJumps;
@@ -40,6 +48,7 @@ public class Movement : MonoBehaviour
             currentWallId = 0;
             jumpsRemaining = MaxJumps; // reset des sauts disponibles
             wallJumpRemaining.Clear(); // réinitialise les compteurs muraux au contact du sol
+            lastWallJumpDirection = 0f;
         }
         else if (collision.gameObject.CompareTag("WALL"))
         {
@@ -51,6 +60,12 @@ public class Movement : MonoBehaviour
             {
                 wallJumpRemaining[currentWallId] = MaxWallJumps;
             }
+
+            // Déterminer la direction opposée au mur pour le wall-jump.
+            // On utilise la position relative joueur/mur pour définir la direction horizontale.
+            float relative = transform.position.x - collision.gameObject.transform.position.x;
+            lastWallJumpDirection = Mathf.Sign(relative);
+            if (lastWallJumpDirection == 0f) lastWallJumpDirection = 1f; // fallback
         }
     }
 
@@ -65,6 +80,7 @@ public class Movement : MonoBehaviour
             // Quitter le mur : on n'autorise plus l'usage du compteur de ce mur tant qu'on ne le retouche pas
             touchingWall = false;
             currentWallId = 0;
+            lastWallJumpDirection = 0f;
         }
     }
 
@@ -78,36 +94,50 @@ public class Movement : MonoBehaviour
         // Utiliser GetButtonDown pour éviter le saut continu si la touche est maintenue
         if (Input.GetButtonDown("Jump"))
         {
+            bool isWallJump = false;
             bool allowed = false;
 
             // Si on est en contact avec un mur : autorisé seulement si ce mur a des sauts restants
             if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
             {
                 allowed = true;
+                isWallJump = true;
             }
             // Sinon, autoriser selon le compteur global de sauts (double jump standard)
             else if (jumpsRemaining > 0)
             {
                 allowed = true;
+                isWallJump = false;
             }
 
             if (allowed)
             {
                 Jump = JumpForce;
-                // stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
+
+                // Stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
+                // Utilisation de rb.velocity (Rigidbody2D) pour définir la vitesse avant le saut.
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
-                rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse); //ajoute une force vers le haut
 
-                // Décrémente le compteur mural si applicable
-                if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
+                if (isWallJump)
                 {
+                    // Wall-jump : vertical = WallVerticalForce, + impulsion horizontale automatique opposée à la surface touchée.
+                    Vector2 wallImpulse = new Vector2(WallHorizontalForce * lastWallJumpDirection, WallVerticalForce);
+                    rb.AddForce(wallImpulse, ForceMode2D.Impulse);
+
+                    // Décrémente le compteur mural pour ce mur seulement
                     wallJumpRemaining[currentWallId]--;
+                    // Ne décrémente pas le compteur global : les sauts muraux sont gérés par wallJumpRemaining
                 }
-
-                // Décrémente le compteur global de sauts si disponible
-                if (jumpsRemaining > 0)
+                else
                 {
-                    jumpsRemaining--;
+                    // Saut normal (au sol ou double jump aérien)
+                    rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse);
+
+                    // Décrémente le compteur global de sauts si disponible
+                    if (jumpsRemaining > 0)
+                    {
+                        jumpsRemaining--;
+                    }
                 }
 
                 bGrounded = false;
