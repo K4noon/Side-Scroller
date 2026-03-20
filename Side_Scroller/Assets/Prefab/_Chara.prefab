@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8733747353001792481}
   - component: {fileID: 8745201216438933664}
   - component: {fileID: -4273716403368831239}
+  - component: {fileID: -1784587017766705335}
   m_Layer: 0
   m_Name: _Chara
   m_TagString: Player
@@ -219,6 +220,19 @@ MonoBehaviour:
   JumpForce: 10
   rb: {fileID: 5392522373824590224}
   WallHorizontalForce: 15
+  WallVerticalForce: 1
   bGrounded: 0
   MaxJumps: 2
   MaxWallJumps: 2
+--- !u!114 &-1784587017766705335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5881499501354980465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 728a341718296474a908b68d476d2966, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::flip

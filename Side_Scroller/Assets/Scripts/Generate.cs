@@ -14,6 +14,11 @@ public class Generate : MonoBehaviour
     public GameObject Chunk8;
     public GameObject Chunk9;
     public GameObject Chunk10;
+    public GameObject Chunk11;
+    public GameObject Chunk12;
+    public GameObject Chunk13;
+    public GameObject Chunk14;
+    public GameObject Chunk15;
 
     // Intervalle entre chaque instanciation (en secondes)
     public float spawnInterval = 1f;
@@ -33,11 +38,15 @@ public class Generate : MonoBehaviour
     // File pour suivre l'ordre des instances créées (utile pour supprimer le plus ancien)
     private Queue<GameObject> spawnedQueue = new Queue<GameObject>();
 
+    // Index du dernier chunk instancié (1..15)
+    private int lastChunkIndex = 0;
+
     void Start()
     {
         currentSpawnX = transform.position.x;
         // Spawn immédiat du premier chunk qui doit être obligatoirement Chunk1
-        SpawnChunk(Chunk1);
+        SpawnChunk(1, Chunk1);
+        lastChunkIndex = 1;
 
         // Démarre la boucle de spawn pour la suite (aléatoire)
         StartCoroutine(SpawnRoutine());
@@ -52,15 +61,34 @@ public class Generate : MonoBehaviour
         {
             yield return new WaitForSeconds(spawnInterval);
 
-            int chunkIndex = Random.Range(1, 11); // 1..10 inclus
+            // Construire la liste des indices autorisés selon les règles
+            List<int> allowed = new List<int>();
+            for (int i = 1; i <= 15; i++)
+            {
+                if (!IsForbiddenSequence(lastChunkIndex, i))
+                    allowed.Add(i);
+            }
+
+            int chunkIndex;
+            if (allowed.Count == 0)
+            {
+                // Cas improbable : aucune option autorisée -> retombe sur sélection libre pour éviter blocage
+                chunkIndex = Random.Range(1, 16); // 1..15 inclus
+            }
+            else
+            {
+                chunkIndex = allowed[Random.Range(0, allowed.Count)];
+            }
+
             GameObject prefab = GetChunkByIndex(chunkIndex);
             if (prefab == null) continue;
 
-            SpawnChunk(prefab);
+            SpawnChunk(chunkIndex, prefab);
         }
     }
 
-    private void SpawnChunk(GameObject prefab)
+    // Instancie et met à jour lastChunkIndex
+    private void SpawnChunk(int index, GameObject prefab)
     {
         if (prefab == null) return;
 
@@ -75,6 +103,7 @@ public class Generate : MonoBehaviour
         spawnedQueue.Enqueue(instance);
 
         currentSpawnX += 21f;
+        lastChunkIndex = index;
     }
 
     // Coroutine indépendante : attend destroyStartDelay avant la première suppression,
@@ -99,6 +128,42 @@ public class Generate : MonoBehaviour
         }
     }
 
+    // Règles interdites :
+    // - Les chunks 5, 9, 10 et 12 ne peuvent pas être générés deux fois d'affilée.
+    // - Les paires consécutives interdites (dans les deux sens) : 10 <-> 5, 5 <-> 9, 10 <-> 9.
+    // - Le chunk 12 ne peut pas être immédiatement suivi par 10, 13 ou 14.
+    // - Les chunks 10, 14 et 15 ne peuvent pas se suivre entre eux (aucune paire consécutive parmi ces trois).
+    private bool IsForbiddenSequence(int previous, int candidate)
+    {
+        if (previous == 0) return false; // pas de contrainte pour le premier spawn si non initialisé
+
+        // Interdire doublons pour 5,9,10,12
+        if ((previous == 5 || previous == 9 || previous == 10 || previous == 12) && previous == candidate)
+            return true;
+
+        // Interdire paires suivantes (les deux sens)
+        // 10 <-> 5
+        if ((previous == 10 && candidate == 5) || (previous == 5 && candidate == 10))
+            return true;
+        // 5 <-> 9
+        if ((previous == 5 && candidate == 9) || (previous == 9 && candidate == 5))
+            return true;
+        // 10 <-> 9
+        if ((previous == 10 && candidate == 9) || (previous == 9 && candidate == 10))
+            return true;
+
+        // Le chunk 12 ne peut pas être avant 10, 13, 14
+        if (previous == 12 && (candidate == 10 || candidate == 13 || candidate == 14))
+            return true;
+
+        // Interdire que 10, 14 et 15 se suivent entre eux (toutes les paires dans le groupe)
+        if ((previous == 10 || previous == 14 || previous == 15) &&
+            (candidate == 10 || candidate == 14 || candidate == 15))
+            return true;
+
+        return false;
+    }
+
     private GameObject GetChunkByIndex(int index)
     {
         switch (index)
@@ -113,6 +178,11 @@ public class Generate : MonoBehaviour
             case 8: return Chunk8;
             case 9: return Chunk9;
             case 10: return Chunk10;
+            case 11: return Chunk11;
+            case 12: return Chunk12;
+            case 13: return Chunk13;
+            case 14: return Chunk14;
+            case 15: return Chunk15;
             default: return null;
         }
     }

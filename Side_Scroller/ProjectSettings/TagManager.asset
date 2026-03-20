@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Ground
   - WALL
+  - KILLZONE
   layers:
   - Default
   - TransparentFX
