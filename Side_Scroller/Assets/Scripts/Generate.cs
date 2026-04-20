@@ -152,8 +152,12 @@ public class Generate : MonoBehaviour
         if ((previous == 10 && candidate == 9) || (previous == 9 && candidate == 10))
             return true;
 
-        // Le chunk 12 ne peut pas être avant 10, 13, 14
-        if (previous == 12 && (candidate == 10 || candidate == 13 || candidate == 14))
+        // Le chunk 12 ne peut pas être avant 10, 13, 14 et 15
+        if (previous == 12 && (candidate == 9|| candidate == 10 || candidate == 13 || candidate == 14 || candidate == 15))
+            return true;
+
+        // Le chunk 3 ne peut pas être suivi de 15, 14, 9 et 10
+        if ((previous == 3 && (candidate == 15 || candidate == 14 || candidate == 9 || candidate == 10)))
             return true;
 
         // Interdire que 10, 14 et 15 se suivent entre eux (toutes les paires dans le groupe)
