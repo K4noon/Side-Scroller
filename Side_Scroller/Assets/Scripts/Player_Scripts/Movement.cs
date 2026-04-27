@@ -3,8 +3,7 @@ using UnityEngine;
 
 public class Movement : MonoBehaviour
 {
-
-    public float Speed = 10;
+    public float Speed = 5;
     private float Jump = 0;
     public float JumpForce = 1;
     public Rigidbody2D rb;
@@ -84,64 +83,86 @@ public class Movement : MonoBehaviour
         }
     }
 
+
+
     // Update is called once per frame
     void Update()
     {
-        float translation = Input.GetAxis("Horizontal") * Speed; //recupere les inputs
-        translation *= Time.deltaTime;
-        transform.Translate(translation, 0, 0); //deplace le joueur
 
-        // Utiliser GetButtonDown pour éviter le saut continu si la touche est maintenue
-        if (Input.GetButtonDown("Jump"))
-        {
-            bool isWallJump = false;
-            bool allowed = false;
 
-            // Si on est en contact avec un mur : autorisé seulement si ce mur a des sauts restants
-            if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
+            float translation = Input.GetAxis("Horizontal") * Speed; //recupere les inputs
+            translation *= Time.deltaTime;
+            transform.Translate(translation, 0, 0); //deplace le joueur
+
+            // Utiliser GetButtonDown pour éviter le saut continu si la touche est maintenue
+            if (Input.GetButtonDown("Jump"))
             {
-                allowed = true;
-                isWallJump = true;
-            }
-            // Sinon, autoriser selon le compteur global de sauts (double jump standard)
-            else if (jumpsRemaining > 0)
-            {
-                allowed = true;
-                isWallJump = false;
-            }
+                bool isWallJump = false;
+                bool allowed = false;
 
-            if (allowed)
-            {
-                Jump = JumpForce;
-
-                // Stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
-                // Utilisation de rb.velocity (Rigidbody2D) pour définir la vitesse avant le saut.
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
-
-                if (isWallJump)
+                // Si on est en contact avec un mur : autorisé seulement si ce mur a des sauts restants
+                if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
                 {
-                    // Wall-jump : vertical = WallVerticalForce, + impulsion horizontale automatique opposée à la surface touchée.
-                    Vector2 wallImpulse = new Vector2(WallHorizontalForce * lastWallJumpDirection, WallVerticalForce);
-                    rb.AddForce(wallImpulse, ForceMode2D.Impulse);
-
-                    // Décrémente le compteur mural pour ce mur seulement
-                    wallJumpRemaining[currentWallId]--;
-                    // Ne décrémente pas le compteur global : les sauts muraux sont gérés par wallJumpRemaining
+                    allowed = true;
+                    isWallJump = true;
                 }
-                else
+                // Sinon, autoriser selon le compteur global de sauts (double jump standard)
+                else if (jumpsRemaining > 0)
                 {
-                    // Saut normal (au sol ou double jump aérien)
-                    rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse);
+                    allowed = true;
+                    isWallJump = false;
+                }
 
-                    // Décrémente le compteur global de sauts si disponible
-                    if (jumpsRemaining > 0)
+                if (allowed)
+                {
+                    Jump = JumpForce;
+
+                    // Stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
+                    // Utilisation de rb.velocity (Rigidbody2D) pour définir la vitesse avant le saut.
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+
+                    if (isWallJump)
                     {
-                        jumpsRemaining--;
-                    }
-                }
+                        // Wall-jump : vertical = WallVerticalForce, + impulsion horizontale automatique opposée à la surface touchée.
+                        Vector2 wallImpulse = new Vector2(WallHorizontalForce * lastWallJumpDirection, WallVerticalForce);
+                        rb.AddForce(wallImpulse, ForceMode2D.Impulse);
 
-                bGrounded = false;
+                        // Décrémente le compteur mural pour ce mur seulement
+                        wallJumpRemaining[currentWallId]--;
+                        // Ne décrémente pas le compteur global : les sauts muraux sont gérés par wallJumpRemaining
+                    }
+                    else
+                    {
+                        // Saut normal (au sol ou double jump aérien)
+                        rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse);
+
+                        // Décrémente le compteur global de sauts si disponible
+                        if (jumpsRemaining > 0)
+                        {
+                            jumpsRemaining--;
+                        }
+                    }
+
+                    bGrounded = false;
+                }
             }
-        }
+        
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

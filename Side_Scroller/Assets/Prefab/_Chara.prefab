@@ -216,7 +216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24067c9739502a247a38d68cb9911ff9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Movement
-  Speed: 10
+  Speed: 0
   JumpForce: 10
   rb: {fileID: 5392522373824590224}
   WallHorizontalForce: 15

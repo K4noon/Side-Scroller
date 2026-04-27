@@ -7,6 +7,8 @@ TagManager:
   - Ground
   - WALL
   - KILLZONE
+  - Porte
+  - PlayAgain
   layers:
   - Default
   - TransparentFX
