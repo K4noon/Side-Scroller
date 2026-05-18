@@ -1,9 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Movement : MonoBehaviour
 {
+    private const string HorizontalAxis = "Horizontal";
     public float Speed = 5;
+
+    [SerializeField] Animator _animator;
+
     private float Jump = 0;
     public float JumpForce = 1;
     public Rigidbody2D rb;
@@ -40,6 +45,14 @@ public class Movement : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         Debug.Log(collision.gameObject);
+
+        // Si touche une zone mortelle, retourner à la scène de départ
+        if (collision.gameObject.CompareTag("KILLZONE"))
+        {
+            SceneManager.LoadScene("startscene");
+            return;
+        }
+
         if (collision.gameObject.CompareTag("Ground")) //si touche le sol
         {
             bGrounded = true;
@@ -88,65 +101,69 @@ public class Movement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Lire l'input horizontal
+        float horiz = Input.GetAxis(HorizontalAxis);
 
+        // Détecter déplacement horizontal avec un petit seuil pour éviter le bruit
+        bool isRunning = Mathf.Abs(horiz) > 0.01f;
+        if (_animator != null) _animator.SetBool("isRunning", isRunning);
 
-            float translation = Input.GetAxis("Horizontal") * Speed; //recupere les inputs
-            translation *= Time.deltaTime;
-            transform.Translate(translation, 0, 0); //deplace le joueur
+        // Appliquer la translation horizontale
+        float translation = horiz * Speed * Time.deltaTime; // recupere les inputs
+        transform.Translate(translation, 0, 0); // deplace le joueur
 
-            // Utiliser GetButtonDown pour éviter le saut continu si la touche est maintenue
-            if (Input.GetButtonDown("Jump"))
+        // Utiliser GetButtonDown pour éviter le saut continu si la touche est maintenue
+        if (Input.GetButtonDown("Jump"))
+        {
+            bool isWallJump = false;
+            bool allowed = false;
+
+            // Si on est en contact avec un mur : autorisé seulement si ce mur a des sauts restants
+            if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
             {
-                bool isWallJump = false;
-                bool allowed = false;
-
-                // Si on est en contact avec un mur : autorisé seulement si ce mur a des sauts restants
-                if (touchingWall && currentWallId != 0 && wallJumpRemaining.ContainsKey(currentWallId) && wallJumpRemaining[currentWallId] > 0)
-                {
-                    allowed = true;
-                    isWallJump = true;
-                }
-                // Sinon, autoriser selon le compteur global de sauts (double jump standard)
-                else if (jumpsRemaining > 0)
-                {
-                    allowed = true;
-                    isWallJump = false;
-                }
-
-                if (allowed)
-                {
-                    Jump = JumpForce;
-
-                    // Stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
-                    // Utilisation de rb.velocity (Rigidbody2D) pour définir la vitesse avant le saut.
-                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
-
-                    if (isWallJump)
-                    {
-                        // Wall-jump : vertical = WallVerticalForce, + impulsion horizontale automatique opposée à la surface touchée.
-                        Vector2 wallImpulse = new Vector2(WallHorizontalForce * lastWallJumpDirection, WallVerticalForce);
-                        rb.AddForce(wallImpulse, ForceMode2D.Impulse);
-
-                        // Décrémente le compteur mural pour ce mur seulement
-                        wallJumpRemaining[currentWallId]--;
-                        // Ne décrémente pas le compteur global : les sauts muraux sont gérés par wallJumpRemaining
-                    }
-                    else
-                    {
-                        // Saut normal (au sol ou double jump aérien)
-                        rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse);
-
-                        // Décrémente le compteur global de sauts si disponible
-                        if (jumpsRemaining > 0)
-                        {
-                            jumpsRemaining--;
-                        }
-                    }
-
-                    bGrounded = false;
-                }
+                allowed = true;
+                isWallJump = true;
             }
-        
+            // Sinon, autoriser selon le compteur global de sauts (double jump standard)
+            else if (jumpsRemaining > 0)
+            {
+                allowed = true;
+                isWallJump = false;
+            }
+
+            if (allowed)
+            {
+                Jump = JumpForce;
+
+                // Stabiliser la vélocité verticale avant d'ajouter l'impulsion pour des sauts cohérents
+                if (rb != null)
+                {
+                    
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
+                }
+
+                if (isWallJump)
+                {
+                    // Wall-jump : vertical = WallVerticalForce, + impulsion horizontale automatique opposée à la surface touchée.
+                    Vector2 wallImpulse = new Vector2(WallHorizontalForce * lastWallJumpDirection, WallVerticalForce);
+                    if (rb != null) rb.AddForce(wallImpulse, ForceMode2D.Impulse);
+
+                    // Décrémente le compteur mural pour ce mur seulement
+                    wallJumpRemaining[currentWallId]--;
+                    // Ne décrémente pas le compteur global : les sauts muraux sont gérés par wallJumpRemaining
+                }
+                else
+                {
+                    // Saut normal (au sol ou double jump aérien)
+                    if (rb != null) rb.AddForce(new Vector2(0, Jump), ForceMode2D.Impulse);
+
+                    // Décrémente le compteur global de sauts si disponible
+                    if (jumpsRemaining > 0) jumpsRemaining--;
+                }
+
+                bGrounded = false;
+            }
+        }
     }
 }
 
